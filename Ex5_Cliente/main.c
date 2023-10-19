@@ -8,6 +8,9 @@ O protocolo usado e' o UDP.
 
 #include <winsock.h>
 #include <stdio.h>
+#include <stdint.h>
+
+#include "args.h"
 
 #pragma comment (lib, "Ws2_32.lib")
 
@@ -16,6 +19,7 @@ O protocolo usado e' o UDP.
 
 #define BUFFERSIZE     4096
 
+
 void Abort(char* msg);
 
 /*________________________________ main _______________________________________
@@ -23,20 +27,11 @@ void Abort(char* msg);
 
 int main(int argc, char* argv[])
 {
-
 	SOCKET sockfd;
 	int msg_len, iResult;
 	struct sockaddr_in serv_addr;
 	char buffer[BUFFERSIZE];
 	WSADATA wsaData;
-
-	/*========================= TESTA A SINTAXE =========================*/
-
-	if (argc != 2) {
-		fprintf(stderr, "Sintaxe: %s frase_a_enviar\n", argv[0]);
-		getchar(); //system("pause");
-		exit(EXIT_FAILURE);
-	}
 
 	/*=============== INICIA OS WINSOCKS ==============*/
 
@@ -45,6 +40,24 @@ int main(int argc, char* argv[])
 		printf("WSAStartup failed: %d\n", iResult);
 		getchar(); //system("pause");
 		exit(1);
+	}
+
+	ArgsInit(argc, argv);
+
+	const char* msg = ArgsGet("msg"), * ip = ArgsGet("ip"), * port = ArgsGet("port");
+
+
+	if (!msg || !ip || !port) {
+		puts("Utilização:\n-msg [MENSAGEM A ENVIAR]\n-ip [ENDEREÇO IP DO SERVIDOR]\n-port [PORTO DO SERVIDOR]\n");
+		return -1;
+	}
+
+	char* endPtr;
+
+	long nPort = strtol(port, &endPtr, 0);
+
+	if (endPtr == port || nPort < 0 || nPort > UINT16_MAX) {
+		Abort("Porto com formato inválido");
 	}
 
 	/*=============== CRIA SOCKET PARA ENVIO/RECEPCAO DE DATAGRAMAS ==============*/
@@ -57,15 +70,15 @@ int main(int argc, char* argv[])
 
 	memset((char*)&serv_addr, 0, sizeof(serv_addr)); /*Coloca a zero todos os bytes*/
 	serv_addr.sin_family = AF_INET; /*Address Family: Internet*/
-	serv_addr.sin_addr.s_addr = inet_addr(SERV_HOST_ADDR); /*IP no formato "dotted decimal" => 32 bits*/
-	serv_addr.sin_port = htons(SERV_UDP_PORT); /*Host TO Netowork Short*/
+	serv_addr.sin_addr.s_addr = inet_addr(ip); /*IP no formato "dotted decimal" => 32 bits*/
+	serv_addr.sin_port = htons((u_short)nPort); /*Host TO Netowork Short*/
 
 	/*====================== ENVIA MENSAGEM AO SERVIDOR ==================*/
 
-	msg_len = strlen(argv[1]);
+	msg_len = strlen(msg);
 
 
-	if (sendto(sockfd, argv[1], msg_len + 1, 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == SOCKET_ERROR)
+	if (sendto(sockfd, msg, msg_len + 1, 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == SOCKET_ERROR)
 		Abort("O subsistema de comunicacao nao conseguiu aceitar o datagrama");
 
 
@@ -83,7 +96,7 @@ int main(int argc, char* argv[])
 		Abort("Nao foi possivel receber a mensagem de volta.");
 	}
 	else {
-		printf("<CLI1> Mensagem recebida:\n\tMensagem Enviada = \"%s\"\n\tMensagem Recebida = \"%s\"\n", argv[1], buffer);
+		printf("<CLI1> Mensagem recebida:\n\tMensagem Enviada = \"%s\"\n\tMensagem Recebida = \"%s\"\n", msg, buffer);
 	}
 
 	/*========================= FECHA O SOCKET ===========================*/
