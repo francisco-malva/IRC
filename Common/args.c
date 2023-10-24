@@ -73,7 +73,7 @@ const char* ArgsGet(char* name)
 {
 
 	for (size_t i = 0; i < ArgCount; i++) {
-		if (strcmp(name, ArgEntries[i].Name) == 0) {
+		if (_strcmpi(name, ArgEntries[i].Name) == 0) {
 			return ArgEntries[i].Value;
 		}
 	}

@@ -10,7 +10,7 @@ O protocolo usado e' o UDP.
 #include <stdio.h>
 #include <stdint.h>
 
-#include "args.h"
+#include "../Common/args.h"
 
 #pragma comment (lib, "Ws2_32.lib")
 

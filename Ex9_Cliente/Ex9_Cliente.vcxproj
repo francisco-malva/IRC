@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <VCProjectVersion>16.0</VCProjectVersion>
+    <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{3c5a3b4d-cf75-49d1-ac69-006799c052a8}</ProjectGuid>
-    <RootNamespace>Ex5Cliente</RootNamespace>
+    <ProjectGuid>{87771f69-cf0b-4da7-901a-29c8886a0ea1}</ProjectGuid>
+    <RootNamespace>Ex9Cliente</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -132,6 +132,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.vcxproj">
       <Project>{363c387c-918c-4116-b14d-cd57213101a4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Ex9_Comum\Ex9_Comum.vcxproj">
+      <Project>{1e13199a-603e-454d-a6e2-74ad1eae8c81}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

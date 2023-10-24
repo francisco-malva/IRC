@@ -19,6 +19,7 @@ O protocolo usado e' o UDP.
 
 #define BUFFERSIZE     4096
 
+#define TIMEOUT (1000)
 
 void Abort(char* msg);
 
@@ -29,7 +30,7 @@ int main(int argc, char* argv[])
 {
 	SOCKET sockfd;
 	int msg_len, iResult;
-	struct sockaddr_in serv_addr;
+	struct sockaddr_in servAddr;
 	char buffer[BUFFERSIZE];
 	WSADATA wsaData;
 
@@ -68,35 +69,55 @@ int main(int argc, char* argv[])
 
 	/*================= PREENCHE ENDERECO DO SERVIDOR ====================*/
 
-	memset((char*)&serv_addr, 0, sizeof(serv_addr)); /*Coloca a zero todos os bytes*/
-	serv_addr.sin_family = AF_INET; /*Address Family: Internet*/
-	serv_addr.sin_addr.s_addr = inet_addr(ip); /*IP no formato "dotted decimal" => 32 bits*/
-	serv_addr.sin_port = htons((u_short)nPort); /*Host TO Netowork Short*/
+	memset((char*)&servAddr, 0, sizeof(servAddr)); /*Coloca a zero todos os bytes*/
+	servAddr.sin_family = AF_INET; /*Address Family: Internet*/
+	servAddr.sin_addr.s_addr = inet_addr(ip); /*IP no formato "dotted decimal" => 32 bits*/
+	servAddr.sin_port = htons((u_short)nPort); /*Host TO Netowork Short*/
 
 	/*====================== ENVIA MENSAGEM AO SERVIDOR ==================*/
 
 	msg_len = strlen(msg);
 
 
-	if (sendto(sockfd, msg, msg_len + 1, 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == SOCKET_ERROR)
+	{
+		int timeout = TIMEOUT;
+		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+		setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+	}
+	
+	if (sendto(sockfd, msg, msg_len + 1, 0, (struct sockaddr*)&servAddr, sizeof(servAddr)) == SOCKET_ERROR)
 		Abort("O subsistema de comunicacao nao conseguiu aceitar o datagrama");
 
 
-
-	struct sockaddr_in addr = { 0 };
-	int len = sizeof(addr);
-
-	getsockname(sockfd, &addr, &len);
-
-	printf("<CLI1> Mensagem enviada pelo porto %hu... a entrega nao e' confirmada.\n", ntohs(addr.sin_port));
-
-
-	if (recvfrom(sockfd, buffer, BUFFERSIZE, 0, NULL, NULL) == SOCKET_ERROR)
 	{
-		Abort("Nao foi possivel receber a mensagem de volta.");
+		struct sockaddr_in myAddr = { 0 };
+		int myLen = sizeof(myAddr);
+
+		getsockname(sockfd, &myAddr, &myLen);
+
+		printf("<CLI1> Mensagem enviada pelo porto %hu... a entrega nao e' confirmada.\n", ntohs(myAddr.sin_port));
 	}
-	else {
-		printf("<CLI1> Mensagem recebida:\n\tMensagem Enviada = \"%s\"\n\tMensagem Recebida = \"%s\"\n", msg, buffer);
+
+	{
+		struct sockaddr_in fromAddr = { 0 };
+		int fromLen = sizeof(fromAddr);
+
+		if (recvfrom(sockfd, buffer, BUFFERSIZE, 0, &fromAddr, &fromLen) == SOCKET_ERROR)
+		{
+			Abort("Nao foi possivel receber a mensagem de volta.");
+		}
+		else {
+
+			int isFromServer = memcmp(&fromAddr.sin_addr, &servAddr.sin_addr, sizeof(fromAddr.sin_addr)) == 0 && ntohs(fromAddr.sin_port) == ntohs(servAddr.sin_port);
+
+			if (isFromServer) {
+				printf("<CLI1> Mensagem recebida:\n\tMensagem Enviada = \"%s\"\n\tMensagem Recebida = \"%s\"\n", msg, buffer);
+			}
+			else {
+				printf("<CLI1> Servidor desconhecido!");
+			}
+
+		}
 	}
 
 	/*========================= FECHA O SOCKET ===========================*/
